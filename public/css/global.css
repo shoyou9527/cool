@@ -1,0 +1,22 @@
+@media (max-width: 767.98px) {
+    .header-navbar .navbar-nav .show {
+        position:absolute;
+    }
+}
+
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.col-md-12 {
+    padding-right: 0px;
+    padding-left: 0px;
+}
+
+.vs-checkbox-con .vs-checkbox .vs-checkbox--check {
+    opacity: 0;
+}
+.vs-checkbox-show {
+    opacity: 1!important;
+}
