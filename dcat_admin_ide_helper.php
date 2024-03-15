@@ -11,6 +11,7 @@ namespace Dcat\Admin {
     use Illuminate\Support\Collection;
 
     /**
+     * @property Grid\Column|Collection disableBatchCheckbox
      * @property Grid\Column|Collection id
      * @property Grid\Column|Collection parent_id
      * @property Grid\Column|Collection order
@@ -38,21 +39,29 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection permission_id
      * @property Grid\Column|Collection menu_id
      * @property Grid\Column|Collection token
+     * @property Grid\Column|Collection company_id
+     * @property Grid\Column|Collection hours_threshold
+     * @property Grid\Column|Collection bonus_amount
      * @property Grid\Column|Collection version
      * @property Grid\Column|Collection is_enabled
      * @property Grid\Column|Collection role_id
      * @property Grid\Column|Collection admin_user_id
+     * @property Grid\Column|Collection admin_user_name
      * @property Grid\Column|Collection work_date
      * @property Grid\Column|Collection work_start_time
      * @property Grid\Column|Collection work_end_time
      * @property Grid\Column|Collection total_hours
      * @property Grid\Column|Collection hourly_rate
      * @property Grid\Column|Collection record_salary
+     * @property Grid\Column|Collection sale_price
+     * @property Grid\Column|Collection is_checkout
      * @property Grid\Column|Collection note
      * @property Grid\Column|Collection type
      * @property Grid\Column|Collection detail
      * @property Grid\Column|Collection username
      * @property Grid\Column|Collection avatar
+     * @property Grid\Column|Collection default_fee
+     * @property Grid\Column|Collection lang
      * @property Grid\Column|Collection user_id
      * @property Grid\Column|Collection path
      * @property Grid\Column|Collection method
@@ -70,6 +79,7 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection last_used_at
      * @property Grid\Column|Collection value
      *
+     * @method Grid\Column|Collection disableBatchCheckbox(string $label = null)
      * @method Grid\Column|Collection id(string $label = null)
      * @method Grid\Column|Collection parent_id(string $label = null)
      * @method Grid\Column|Collection order(string $label = null)
@@ -97,21 +107,29 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection permission_id(string $label = null)
      * @method Grid\Column|Collection menu_id(string $label = null)
      * @method Grid\Column|Collection token(string $label = null)
+     * @method Grid\Column|Collection company_id(string $label = null)
+     * @method Grid\Column|Collection hours_threshold(string $label = null)
+     * @method Grid\Column|Collection bonus_amount(string $label = null)
      * @method Grid\Column|Collection version(string $label = null)
      * @method Grid\Column|Collection is_enabled(string $label = null)
      * @method Grid\Column|Collection role_id(string $label = null)
      * @method Grid\Column|Collection admin_user_id(string $label = null)
+     * @method Grid\Column|Collection admin_user_name(string $label = null)
      * @method Grid\Column|Collection work_date(string $label = null)
      * @method Grid\Column|Collection work_start_time(string $label = null)
      * @method Grid\Column|Collection work_end_time(string $label = null)
      * @method Grid\Column|Collection total_hours(string $label = null)
      * @method Grid\Column|Collection hourly_rate(string $label = null)
      * @method Grid\Column|Collection record_salary(string $label = null)
+     * @method Grid\Column|Collection sale_price(string $label = null)
+     * @method Grid\Column|Collection is_checkout(string $label = null)
      * @method Grid\Column|Collection note(string $label = null)
      * @method Grid\Column|Collection type(string $label = null)
      * @method Grid\Column|Collection detail(string $label = null)
      * @method Grid\Column|Collection username(string $label = null)
      * @method Grid\Column|Collection avatar(string $label = null)
+     * @method Grid\Column|Collection default_fee(string $label = null)
+     * @method Grid\Column|Collection lang(string $label = null)
      * @method Grid\Column|Collection user_id(string $label = null)
      * @method Grid\Column|Collection path(string $label = null)
      * @method Grid\Column|Collection method(string $label = null)
@@ -134,6 +152,7 @@ namespace Dcat\Admin {
     class MiniGrid extends Grid {}
 
     /**
+     * @property Show\Field|Collection disableBatchCheckbox
      * @property Show\Field|Collection id
      * @property Show\Field|Collection parent_id
      * @property Show\Field|Collection order
@@ -161,21 +180,29 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection permission_id
      * @property Show\Field|Collection menu_id
      * @property Show\Field|Collection token
+     * @property Show\Field|Collection company_id
+     * @property Show\Field|Collection hours_threshold
+     * @property Show\Field|Collection bonus_amount
      * @property Show\Field|Collection version
      * @property Show\Field|Collection is_enabled
      * @property Show\Field|Collection role_id
      * @property Show\Field|Collection admin_user_id
+     * @property Show\Field|Collection admin_user_name
      * @property Show\Field|Collection work_date
      * @property Show\Field|Collection work_start_time
      * @property Show\Field|Collection work_end_time
      * @property Show\Field|Collection total_hours
      * @property Show\Field|Collection hourly_rate
      * @property Show\Field|Collection record_salary
+     * @property Show\Field|Collection sale_price
+     * @property Show\Field|Collection is_checkout
      * @property Show\Field|Collection note
      * @property Show\Field|Collection type
      * @property Show\Field|Collection detail
      * @property Show\Field|Collection username
      * @property Show\Field|Collection avatar
+     * @property Show\Field|Collection default_fee
+     * @property Show\Field|Collection lang
      * @property Show\Field|Collection user_id
      * @property Show\Field|Collection path
      * @property Show\Field|Collection method
@@ -193,6 +220,7 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection last_used_at
      * @property Show\Field|Collection value
      *
+     * @method Show\Field|Collection disableBatchCheckbox(string $label = null)
      * @method Show\Field|Collection id(string $label = null)
      * @method Show\Field|Collection parent_id(string $label = null)
      * @method Show\Field|Collection order(string $label = null)
@@ -220,21 +248,29 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection permission_id(string $label = null)
      * @method Show\Field|Collection menu_id(string $label = null)
      * @method Show\Field|Collection token(string $label = null)
+     * @method Show\Field|Collection company_id(string $label = null)
+     * @method Show\Field|Collection hours_threshold(string $label = null)
+     * @method Show\Field|Collection bonus_amount(string $label = null)
      * @method Show\Field|Collection version(string $label = null)
      * @method Show\Field|Collection is_enabled(string $label = null)
      * @method Show\Field|Collection role_id(string $label = null)
      * @method Show\Field|Collection admin_user_id(string $label = null)
+     * @method Show\Field|Collection admin_user_name(string $label = null)
      * @method Show\Field|Collection work_date(string $label = null)
      * @method Show\Field|Collection work_start_time(string $label = null)
      * @method Show\Field|Collection work_end_time(string $label = null)
      * @method Show\Field|Collection total_hours(string $label = null)
      * @method Show\Field|Collection hourly_rate(string $label = null)
      * @method Show\Field|Collection record_salary(string $label = null)
+     * @method Show\Field|Collection sale_price(string $label = null)
+     * @method Show\Field|Collection is_checkout(string $label = null)
      * @method Show\Field|Collection note(string $label = null)
      * @method Show\Field|Collection type(string $label = null)
      * @method Show\Field|Collection detail(string $label = null)
      * @method Show\Field|Collection username(string $label = null)
      * @method Show\Field|Collection avatar(string $label = null)
+     * @method Show\Field|Collection default_fee(string $label = null)
+     * @method Show\Field|Collection lang(string $label = null)
      * @method Show\Field|Collection user_id(string $label = null)
      * @method Show\Field|Collection path(string $label = null)
      * @method Show\Field|Collection method(string $label = null)

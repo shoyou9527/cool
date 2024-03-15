@@ -17,6 +17,10 @@ use Jenssegers\Agent\Agent;
 
 class AgentController extends UserController
 {
+    public function __construct()
+    {
+        $this->middleware('check_member_permission')->only(['edit', 'view', 'destroy']);
+    }
 
     public function title()
     {
@@ -101,33 +105,35 @@ class AgentController extends UserController
                     return collect($roles)->pluck('name');
                 })->label();
 
-                $show->field('permissions')->unescape()->as(function () {
-                    $roles = $this->roles->toArray();
+                if (Admin::user()->isAdministrator()) {
+                    $show->field('permissions')->unescape()->as(function () {
+                        $roles = $this->roles->toArray();
 
-                    $permissionModel = config('admin.database.permissions_model');
-                    $roleModel = config('admin.database.roles_model');
-                    $permissionModel = new $permissionModel();
-                    $nodes = $permissionModel->allNodes();
+                        $permissionModel = config('admin.database.permissions_model');
+                        $roleModel = config('admin.database.roles_model');
+                        $permissionModel = new $permissionModel();
+                        $nodes = $permissionModel->allNodes();
 
-                    $tree = Tree::make($nodes);
+                        $tree = Tree::make($nodes);
 
-                    $isAdministrator = false;
-                    foreach (array_column($roles, 'slug') as $slug) {
-                        if ($roleModel::isAdministrator($slug)) {
-                            $tree->checkAll();
-                            $isAdministrator = true;
+                        $isAdministrator = false;
+                        foreach (array_column($roles, 'slug') as $slug) {
+                            if ($roleModel::isAdministrator($slug)) {
+                                $tree->checkAll();
+                                $isAdministrator = true;
+                            }
                         }
-                    }
 
-                    if (! $isAdministrator) {
-                        $keyName = $permissionModel->getKeyName();
-                        $tree->check(
-                            $roleModel::getPermissionId(array_column($roles, $keyName))->flatten()
-                        );
-                    }
+                        if (! $isAdministrator) {
+                            $keyName = $permissionModel->getKeyName();
+                            $tree->check(
+                                $roleModel::getPermissionId(array_column($roles, $keyName))->flatten()
+                            );
+                        }
 
-                    return $tree->render();
-                });
+                        return $tree->render();
+                    });
+                }
             }
 
             $show->field('created_at');
@@ -154,7 +160,7 @@ class AgentController extends UserController
                 $form->hidden('parent_id')->value(Admin::user()->id);
             } else {
                 // 其他角色，跳轉首頁
-                return redirect('/');
+                return redirect('/admin');
             }
 
             $userTable = config('admin.database.users_table');
@@ -190,17 +196,12 @@ class AgentController extends UserController
 
             $form->ignore(['password_confirmation']);
 
-            //設定角色的下拉選框內容為代理
             if (config('admin.permission.enable')) {
-                $form->select('roles', trans('admin.roles'))
-                ->options(function () {
-                    $roleModel = config('admin.database.roles_model');
-                    return $roleModel::where('id', 3)->pluck('name', 'id');
-                })
-                ->default(3, true)
-                ->customFormat(function ($v) {
-                    return array_column($v, 'id');
-                });
+                if ($form->isCreating()) {
+                    // 创建用户时，设置角色为“代理”，并且隐藏这个字段
+                    $form->hidden('roles')->default(3, true);
+                }
+                // 在编辑用户时，不显示角色字段
             }
 
             $form->display('created_at', trans('admin.created_at'));
@@ -210,6 +211,9 @@ class AgentController extends UserController
                 $form->disableDeleteButton();
             }
         })->saving(function (Form $form) {
+            if ($form->isCreating()) {
+                $form->roles = 3; // 強制角色為 "代理" has ID of 3
+            }
             if ($form->password && $form->model()->get('password') != $form->password) {
                 $form->password = bcrypt($form->password);
             }

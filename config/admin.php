@@ -95,7 +95,7 @@ return [
     | Html title for all pages.
     |
     */
-    'title' => 'Admin',
+    'title' => 'SuperCool',
 
     /*
     |--------------------------------------------------------------------------
@@ -199,7 +199,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'helpers' => [
-        'enable' => true,
+        'enable' => true,  //保留debug 但關閉開發工具
     ],
 
     /*
@@ -233,7 +233,7 @@ return [
     'menu' => [
         'cache' => [
             // enable cache or not
-            'enable' => false,
+            'enable' => true,
             'store'  => 'file',
         ],
 
@@ -286,7 +286,7 @@ return [
 
         // User tables and model.
         'users_table' => 'admin_users',
-        'users_model' => Dcat\Admin\Models\Administrator::class,
+        'users_model' => Dcat\Admin\Models\Administrator::class, //原設定
 
         // Role table and model.
         'roles_table' => 'admin_roles',

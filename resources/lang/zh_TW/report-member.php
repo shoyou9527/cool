@@ -1,9 +1,8 @@
 <?php 
 return [
     'labels' => [
-        'MemberWork' => '會員工作紀錄',
-        'member-work' => '會員工作紀錄',
-        'member_work' => '會員工作紀錄',
+        'ReportMember' => '會員報表',
+        'report-member' => '會員報表',
         'start_work_button' => '上班',
         'end_work_button' => '下班',
         'global_search' => '全域搜尋',

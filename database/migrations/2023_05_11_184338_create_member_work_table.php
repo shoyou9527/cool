@@ -24,6 +24,7 @@ class CreateMemberWorkTable extends Migration
             $table->integer('hourly_rate')->nullable()->comment('時薪');
             $table->integer('record_salary')->nullable()->comment('此筆紀錄薪水');
             $table->integer('sale_price')->nullable()->comment('從客收多少');
+            $table->boolean('is_checkout')->default(false)->comment('結帳');
             $table->text('note')->nullable()->comment('備註');
             $table->timestamps();
         });

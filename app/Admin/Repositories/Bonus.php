@@ -2,10 +2,10 @@
 
 namespace App\Admin\Repositories;
 
-use App\Models\UsersModel as Model;
+use App\Models\Bonus as Model;
 use Dcat\Admin\Repositories\EloquentRepository;
 
-class Users extends EloquentRepository
+class Bonus extends EloquentRepository
 {
     /**
      * Model.
