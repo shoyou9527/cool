@@ -22,7 +22,10 @@ class Actions extends BaseActions
         $url = "{$resource}/{$key}";
 
         $this->prepend(
-            "<a href='{$url}' style='color:white;margin:4px' class='btn btn-info'><i class='feather icon-eye'></i> {$this->trans('view')}</a>"
+            "<a href='{$url}' style='color:white;margin:4px' class='btn btn-sm btn-info'>
+                <i class='feather icon-eye'></i>
+                <span class='d-none d-sm-inline'> 查看</span>
+            </a>"
         );
     }
 
@@ -33,7 +36,10 @@ class Actions extends BaseActions
         $url = "{$resource}/{$key}/edit";
 
         $this->append(
-            "<a href='{$url}' style='color:white;margin:4px' class='btn btn-primary'><i class='feather icon-edit'></i> {$this->trans('edit')}</a>"
+            "<a href='{$url}' style='color:white;margin:4px' class='btn btn-sm btn-primary'>
+                <i class='feather icon-edit'></i>
+                <span class='d-none d-sm-inline'> 編輯</span>
+            </a>"
         );
     }
 
@@ -44,7 +50,10 @@ class Actions extends BaseActions
         $url = "{$resource}/{$key}";
 
         $this->append(
-            "<a data-url='{$url}' data-message='ID - {$key}' data-action='delete' data-redirect='{$resource}?_pjax=%23pjax-container' style='color:white;margin:4px' href='javascript:void(0)' class='btn btn-danger'><i class='feather icon-trash grid-action-icon' title='{$this->trans('delete')}'></i> {$this->trans('delete')}</a>"
+            "<a data-url='{$url}' data-message='ID - {$key}' data-action='delete' data-redirect='{$resource}?_pjax=%23pjax-container' style='color:white;margin:4px' href='javascript:void(0)' class='btn btn-sm btn-danger'>
+                <i class='feather icon-trash grid-action-icon' title='{$this->trans('delete')}'></i>
+                <span class='d-none d-sm-inline'> 刪除</span>
+            </a>"
         );
     }
 }

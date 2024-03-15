@@ -6,14 +6,12 @@ use Dcat\Admin\Traits\HasDateTimeFormatter;
 use Dcat\Admin\Models\Administrator;
 use Illuminate\Database\Eloquent\Model;
 
-class MemberWork extends Model
+class Bonus extends Model
 {
 	use HasDateTimeFormatter;
-    protected $table = 'member_work';
 
-    public function member()
+	public function company()
     {
-        return $this->belongsTo(Administrator::class, 'admin_user_id');
+        return $this->belongsTo(Administrator::class, 'company_id');
     }
-    
 }

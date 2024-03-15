@@ -17,10 +17,15 @@ use Dcat\Admin\Http\Auth\Permission;
 use Dcat\Admin\Models\Administrator as AdministratorModel;
 use Dcat\Admin\Support\Helper;
 use Dcat\Admin\Widgets\Tree;
+use Jenssegers\Agent\Agent;
 
 class MemberController extends UserController
 {
-
+    public function __construct()
+    {
+        $this->middleware('check_member_permission')->only(['edit', 'show', 'destroy']);
+    }
+    
     public function title()
     {
         return trans('admin.member');
@@ -39,8 +44,11 @@ class MemberController extends UserController
     {
         return Grid::make(Administrator::with(['roles']), function (Grid $grid) {
 
-            // 设置自定义视图
-            $grid->view('admin.grid.member');
+            // 根據User裝置顯示對應的view，電腦版為預設view，手機版為客製view
+            $agent = new Agent();
+            if ($agent->isMobile()) {
+                $grid->view('admin.grid.member');
+            }
 
             if (Admin::user()->isAdministrator()) {
                 // 總管理員登入顯示所有會員
@@ -57,37 +65,25 @@ class MemberController extends UserController
                 $grid->model()->where('parent_id', Admin::user()->id);
             } else {
                 // 其他角色，跳轉首頁
-                return redirect('/');
+                return redirect('/admin');
             }
 
             $grid->column('id', 'ID')->sortable();
+            $grid->column('agent_name', '上層代理')->display(function () {
+                return Administrator::find($this->parent_id)->name;
+            });
             $grid->column('username');
             $grid->column('name');
-            $grid->column('avatar')->image();
+            $grid->column('avatar','頭像')->image();
             $grid->column('default_fee', '時薪');
 
-            if (config('admin.permission.enable')) {
-                $grid->column('roles')->pluck('name')->label('primary', 3);
+            $grid->column('lang', '英文')->switch()->help('給予會員登入後使用英文介面網站觀看');;
 
-                $permissionModel = config('admin.database.permissions_model');
-                $roleModel = config('admin.database.roles_model');
-                $nodes = (new $permissionModel())->allNodes();
-            }
-
-            $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
-
-            // $grid->quickSearch(['id', 'name', 'username']);：这个函数启用快速搜索功能，允许用户输入搜索关键字在'id'、'name'和'username'这三个字段中进行搜索。
-            // $grid->showQuickEditButton();：这个函数会在表格中每一行的操作列增加一个快速编辑按钮，用户点击这个按钮可以直接在表格中编辑该行的数据。
-            // $grid->enableDialogCreate();：这个函数使创建新数据行的表单在一个对话框中显示，而不是在新的页面中。
-            // $grid->showColumnSelector();：这个函数会在表格的工具栏中增加一个列选择器，用户可以通过这个选择器来选择哪些列在表格中显示。
-            // $grid->disableEditButton();：这个函数会在表格中每一行的操作列移除编辑按钮，使用户不能编辑数据行。
-
-            $grid->quickSearch(['id', 'name', 'username']);
-            $grid->showQuickEditButton();
-            // $grid->enableDialogCreate();
-            // $grid->showColumnSelector();
-            $grid->disableEditButton();
+            $grid->quickSearch(['id', 'name', 'username']); //快速搜索
+            $grid->showQuickEditButton(); //快速编辑按钮
+            // $grid->enableDialogCreate(); //对话框中显示
+            // $grid->showColumnSelector(); //列选择器
+            $grid->disableEditButton(); //移除编辑按钮
 
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 if ($actions->getKey() == AdministratorModel::DEFAULT_ID) {
@@ -101,10 +97,13 @@ class MemberController extends UserController
     {
         return Show::make($id, Administrator::with(['roles']), function (Show $show) {
             $show->field('id');
+            $show->field('parent_name', '上層代理名稱')->as(function () {
+                return Administrator::find($this->parent_id) ? Administrator::find($this->parent_id)->name : 'N/A';
+            });
             $show->field('username');
             $show->field('name');
             $show->field('avatar', __('admin.avatar'))->image();
-            $show->field('default_fee');
+            $show->field('default_fee','時薪');
             if (config('admin.permission.enable')) {
                 $show->field('roles')->as(function ($roles) {
                     if (! $roles) {
@@ -114,33 +113,35 @@ class MemberController extends UserController
                     return collect($roles)->pluck('name');
                 })->label();
 
-                $show->field('permissions')->unescape()->as(function () {
-                    $roles = $this->roles->toArray();
+                if (Admin::user()->isAdministrator()) {
+                    $show->field('permissions')->unescape()->as(function () {
+                        $roles = $this->roles->toArray();
 
-                    $permissionModel = config('admin.database.permissions_model');
-                    $roleModel = config('admin.database.roles_model');
-                    $permissionModel = new $permissionModel();
-                    $nodes = $permissionModel->allNodes();
+                        $permissionModel = config('admin.database.permissions_model');
+                        $roleModel = config('admin.database.roles_model');
+                        $permissionModel = new $permissionModel();
+                        $nodes = $permissionModel->allNodes();
 
-                    $tree = Tree::make($nodes);
+                        $tree = Tree::make($nodes);
 
-                    $isAdministrator = false;
-                    foreach (array_column($roles, 'slug') as $slug) {
-                        if ($roleModel::isAdministrator($slug)) {
-                            $tree->checkAll();
-                            $isAdministrator = true;
+                        $isAdministrator = false;
+                        foreach (array_column($roles, 'slug') as $slug) {
+                            if ($roleModel::isAdministrator($slug)) {
+                                $tree->checkAll();
+                                $isAdministrator = true;
+                            }
                         }
-                    }
 
-                    if (! $isAdministrator) {
-                        $keyName = $permissionModel->getKeyName();
-                        $tree->check(
-                            $roleModel::getPermissionId(array_column($roles, $keyName))->flatten()
-                        );
-                    }
+                        if (! $isAdministrator) {
+                            $keyName = $permissionModel->getKeyName();
+                            $tree->check(
+                                $roleModel::getPermissionId(array_column($roles, $keyName))->flatten()
+                            );
+                        }
 
-                    return $tree->render();
-                });
+                        return $tree->render();
+                    });
+                }
             }
 
             $show->field('created_at');
@@ -159,16 +160,20 @@ class MemberController extends UserController
                 })->pluck('name', 'id');
                 $form->select('parent_id', '上層代理')->options($companyOptions);
             } elseif (Admin::user()->isRole('company')) {
-                ///公司登入時只顯示屬於當前公司的代理
-                $form->model()->where('parent_id', Admin::user()->id);
+                //公司登入時 抓取此公司的上層代理供選擇
+                $companyOptions = Administrator::where('parent_id', Admin::user()->id)
+                    ->whereHas('roles', function ($query) {
+                        $query->where('id', 3);
+                    })->pluck('name', 'id');
+                $form->select('parent_id', '上層代理')->options($companyOptions);
             } elseif (Admin::user()->isRole('agent')) {
-                //帶入此代理為上層ID
+                //代理登入時 帶入此代理為上層ID
                 $form->hidden('parent_id')->value(Admin::user()->id);
             } else {
                 // 其他角色，跳轉首頁
-                return redirect('/');
+                return redirect('/admin');
             }
-
+            
             $userTable = config('admin.database.users_table');
 
             $connection = config('admin.database.connection');
@@ -184,6 +189,8 @@ class MemberController extends UserController
             $form->text('name', trans('admin.name'))->required();
             $form->image('avatar', trans('admin.avatar'))->autoUpload();
             $form->text('default_fee', trans('時薪'));
+
+            $form->switch('lang', '英文');
 
             if ($id) {
                 $form->password('password', trans('admin.password'))
@@ -203,17 +210,12 @@ class MemberController extends UserController
 
             $form->ignore(['password_confirmation']);
 
-            //設定角色的下拉選框內容為會員
             if (config('admin.permission.enable')) {
-                $form->select('roles', trans('admin.roles'))
-                ->options(function () {
-                    $roleModel = config('admin.database.roles_model');
-                    return $roleModel::where('id', 4)->pluck('name', 'id');
-                })
-                ->default(4, true)
-                ->customFormat(function ($v) {
-                    return array_column($v, 'id');
-                });
+                if ($form->isCreating()) {
+                    // 创建用户时，设置角色为“会员”，并且隐藏这个字段
+                    $form->hidden('roles')->default(4, true);
+                }
+                // 在编辑用户时，不显示角色字段
             }
 
             $form->display('created_at', trans('admin.created_at'));
@@ -223,6 +225,9 @@ class MemberController extends UserController
                 $form->disableDeleteButton();
             }
         })->saving(function (Form $form) {
+            if ($form->isCreating()) {
+                $form->roles = 4; // 強制角色為 "会员" has ID of 4
+            }
             if ($form->password && $form->model()->get('password') != $form->password) {
                 $form->password = bcrypt($form->password);
             }

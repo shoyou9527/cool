@@ -39,7 +39,6 @@
     body.dark-mode .mailbox-attachment-name {
         color: #a8a9bb
     }
-    .mailbox-attachments li
 </style>
 
 
@@ -60,9 +59,9 @@
                             {!! $row->column('avatar') !!}
                         </div>
                         <div class="mailbox-attachment-info card-body">
-                            {{-- <div class="d-flex justify-content-between item">
-                                <span class="mailbox-attachment-name">{!! $grid->columns()->get('id')->getLabel() !!}</span>{!! $row->column('id') !!}
-                            </div> --}}
+                            <div class="d-flex justify-content-between item">
+                                <span class="mailbox-attachment-name">{!! $grid->columns()->get('agent_name')->getLabel() !!}</span>{!! $row->column('agent_name') !!}
+                            </div>
                             <div class="d-flex justify-content-between item">
                                 <span class="mailbox-attachment-name">{!! $grid->columns()->get('username')->getLabel() !!}</span>{!! $row->column('username') !!}
                             </div>

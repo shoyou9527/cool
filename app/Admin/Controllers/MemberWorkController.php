@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Services\RoleBasedMemberService;
 use App\Admin\Repositories\MemberWork;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
@@ -10,11 +11,16 @@ use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Models\Administrator;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 use Jenssegers\Agent\Agent;
+use Dcat\Admin\Grid\Displayers\Checkbox;
 
 class MemberWorkController extends AdminController
 {
+    public function __construct()
+    {
+        $this->middleware('check_member_permission:true')->only(['edit', 'view', 'destroy']);
+    }
+
     /**
      * Make a grid builder.
      *
@@ -23,7 +29,7 @@ class MemberWorkController extends AdminController
 
     protected function grid()
     {
-        return Grid::make(new MemberWork(), function (Grid $grid) {
+        return Grid::make(new MemberWork(['member']), function (Grid $grid) {
 
             // 根據User裝置顯示對應的view，電腦版為預設view，手機版為客製view
             $agent = new Agent();
@@ -31,73 +37,75 @@ class MemberWorkController extends AdminController
                 $grid->view('admin.grid.member_work');
             }
             
-            // 根据管理员角色过滤会员列表
-            $userRole = Admin::user()->roles->first()->slug;
-            $memberWorkRepo = new MemberWork();
-            $memberIds = collect();
+            //根據使用者抓取 使用者下層的會員列表
+            $memberService = new RoleBasedMemberService();
+            $memberIds = $memberService->filterMembersByRole();
+            $grid->model()->whereIn('admin_user_id', $memberIds);
 
-            switch ($userRole) {
-                case 'administrator':
-                    // 管理员显示所有会员 不需要进一步筛选
-                    break;
+            //顯示會員的上層代理
+            $grid->column('agent_name', admin_trans_label('agent_name'))->display(function () {
+                $parentId = Administrator::where('id', $this->admin_user_id)->value('parent_id');
+                $parentName = Administrator::where('id', $parentId)->value('username');
+                return $parentName;
+            });
 
-                case 'company':
-                    // 公司角色显示该公司的代理和会员
-                    $agents = Administrator::where('parent_id', Admin::user()->id)->pluck('id');
-                    $memberIds = Administrator::whereIn('parent_id', $agents)->pluck('id');
-                    break;
+            //會員登入不可篩選帳號
+            if (Admin::user()->inRoles(['member'])) {
+                $grid->column('admin_user_name');
+                //會員登入禁用功能
+                $grid->disableCreateButton(); //新增
+                $grid->disableActions(); //操作
+                $grid->disableRowSelector();//勾選框
+                // $grid->disableBatchCheckbox();
+                $grid->disableBatchDelete();//批量刪除
+                $memberWorkRepo = new MemberWork();
+                // 获取会员的最后一笔上班打卡记录
+                $lastWorkRecord = $memberWorkRepo->model()::where('admin_user_id', Admin::user()->id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
 
-                case 'agent':
-                    // 代理角色显示属于当前代理的会员
-                    $memberIds = Administrator::where('parent_id', Admin::user()->id)->pluck('id');
-                    break;
+                if ($lastWorkRecord && !empty($lastWorkRecord->work_start_time) && empty($lastWorkRecord->work_end_time)) {
+                    // 如果沒有上班打卡記錄或已經打卡下班，顯示上班打卡按鈕
+                    $grid->tools('<a href="#" class="btn btn-danger disable-outline">' . admin_trans_label('start_work_button') . '</a>');
+                    $grid->tools('<a href="/admin/api/work_end" class="btn btn-info disable-outline">' . admin_trans_label('end_work_button') . '</a>');
+                } else {
+                    // 如果有上班打卡記錄且尚未打卡下班，顯示下班打卡按鈕
+                    $grid->tools('<a href="/admin/api/work_start" class="btn btn-info disable-outline">' . admin_trans_label('start_work_button') . '</a>');
+                    $grid->tools('<a href="#" class="btn btn-danger disable-outline">' . admin_trans_label('end_work_button') . '</a>');
+                }
 
-                case 'member':
-                    // 会员只能看到自己 並顯示打卡按鈕
-                    app('translator')->setLocale('en'); //設定會員登入為英文測試
+            }else{
+                //會員帳號
+                $grid->column('member.username', admin_trans_field('admin_user_name'))->filter('like');
 
-                    // 获取会员的最后一笔上班打卡记录
-                    $lastWorkRecord = $memberWorkRepo->model()::where('admin_user_id', Admin::user()->id)
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-
-                    if (!empty($lastWorkRecord->work_end_time)) {
-                        // 有上班打卡记录且尚未打卡下班，显示下班打卡按钮
-                        $grid->tools('<a href="/admin/api/work_start" class="btn btn-info disable-outline">' . admin_trans_label('start_work_button') . '</a>');
-                        $grid->tools('<a href="#" class="btn btn-danger disable-outline">' . admin_trans_label('end_work_button') . '</a>');
-                    } else {
-                        // 没有上班打卡记录或已经打卡下班，显示上班打卡按钮
-                        $grid->tools('<a href="#" class="btn btn-danger disable-outline">' . admin_trans_label('start_work_button') . '</a>');
-                        $grid->tools('<a href="/admin/api/work_end" class="btn btn-info disable-outline">' . admin_trans_label('end_work_button') . '</a>');
-                    }
-                    
-                    $memberIds->push(Admin::user()->id);
-                    break;
-
-                default:
-                    // 其他角色，跳转首页
-                    return redirect('/admin');
             }
 
-            if (!$memberIds->isEmpty()) {
-                $grid->model()->whereIn('admin_user_id', $memberIds);
-            }
+            //會員名稱
+            $grid->column('member.name', admin_trans_label('member_name'));
+            
+            $grid->column('work_date')->sortable()->style('white-space: nowrap')->display(function ($value) {
+                return date('m/d', strtotime($value));
+            });
 
-            // $grid->column('id');
-            // $grid->column('admin_user_id');
-            $grid->column('admin_user_name')->filter('like');
-            $grid->column('work_date')->sortable();
-            $grid->column('work_start_time');
-            $grid->column('work_end_time');
+            $grid->column('work_start_time')->display(function ($value) {
+                return $value ? date('H:i', strtotime($value)) : '';
+            });
+            
+            $grid->column('work_end_time')->display(function ($value) {
+                return $value ? date('H:i', strtotime($value)) : '';
+            });
             $grid->column('total_hours');
             $grid->column('hourly_rate');
             $grid->column('record_salary');
-            $grid->column('sale_price');
-            $grid->column('note');
-            // $grid->column('created_at');
-            // $grid->column('updated_at');
+            //會員移除售價 新增按鈕 操作欄位 勾選框刪除
+            if (!Admin::user()->inRoles(['member'])) {
+                $grid->column('sale_price'); //售價
+                $grid->column('is_checkout')->switch();
+                $grid->column('note');
+            }
             
             $grid->filter(function (Grid\Filter $filter) {
+                $filter->expand(false); // 將筛選器設置為預設收起狀態
                 $filter->date('work_date')->width(3);
                 $filter->where('global_search', function ($query) {
                     $query->where('admin_user_name', 'like', "%{$this->input}%")
@@ -111,6 +119,7 @@ class MemberWorkController extends AdminController
                 }, admin_trans_label('global_search'))->width(4)->placeholder(admin_trans_label('search_content'));
             });
 
+            
             // 總金額
             $grid->footer(function ($query) {
                 $subtotal = $query->sum('record_salary');
@@ -131,14 +140,17 @@ class MemberWorkController extends AdminController
     {
         return Show::make($id, new MemberWork(), function (Show $show) {
 
-            if(Admin::user()->isRole('member'))
-            {
-                app('translator')->setLocale('en');
-            }
-
             $show->field('id');
-            $show->field('admin_user_id');
-            $show->field('admin_user_name');
+            // $show->field('admin_user_id');
+            $show->field('admin_user_id','會員資料')->as(function ($adminUserId) {
+                $member = Administrator::find($adminUserId);
+                if ($member) {
+                    $parentName = Administrator::where('id', $member->parent_id)->value('username');
+                    return '名稱: ' . $member->name . ', 帳號: ' . $member->username. ', 編號: ' . $member->id . ', 上層代理: ' . $parentName;
+                }
+                return '';
+            });
+
             $show->field('work_date');
             $show->field('work_start_time');
             $show->field('work_end_time');
@@ -189,7 +201,6 @@ class MemberWorkController extends AdminController
 
                 case 'member':
                     // 會員只能看到自己
-                    app('translator')->setLocale('en'); //設定會員登入為英文測試
                     $users = Administrator::where('id', Admin::user()->id)->get();
                     break;
 
@@ -198,31 +209,40 @@ class MemberWorkController extends AdminController
                     return redirect('/admin');
             }
 
-            //會員登入時不用下拉選單
-            if ($role == 'member') {
-                $form->hidden('admin_user_name')->default($users->first()->username);
-                $form->hidden('admin_user_id')->default($users->first()->id);
-            } else {
-                $users = $users->pluck('username', 'username');
-                $form->select('admin_user_name')->options($users);
+            $form->display('id');
+            
+            if ($form->isCreating()) {
+                // 新增表單，使用下拉選擇框選擇會員
+                if ($role != 'member') {
+                    $users = $users->pluck('username', 'id');
+                    $form->select('admin_user_id', '選擇會員')->options($users);
 
-                //按照帳號查詢ID並新增使用
-                $form->hidden('admin_user_id');
-                $form->saving(function (Form $form) {
-                    $selectedUserName = $form->input('admin_user_name');
-                    $selectedUserId = Administrator::where('username', $selectedUserName)->first()->id;
-                    $form->input('admin_user_id', $selectedUserId);
+                    $form->saving(function (Form $form) {
+                        $selectedUserId = $form->input('admin_user_id');
+                        $form->input('admin_user_id', $selectedUserId);
+                    });
+                }
+            } else {
+                // 編輯表單，顯示固定的會員帳號
+                $form->display('admin_user_id','會員資料')->customFormat(function ($adminUserId) {
+                    $member = Administrator::find($adminUserId);
+                    if ($member) {
+                        return '名稱: ' . $member->name . ', 帳號: ' . $member->username. ', 編號: ' . $member->id;
+                    }
+                    return '';
                 });
+                // $form->display('admin_user_id');
             }
 
-            $form->display('id');
             $form->date('work_date')->default(date('Y-m-d'));
-            $form->time('work_start_time')->default(date('H:i:s'));
-            $form->time('work_end_time')->default(date('H:i:s', strtotime('+1 hour')));
+            $form->datetime('work_start_time')->default(date('Y-m-d H:i:s'));
+            $form->datetime('work_end_time')->default(date('Y-m-d H:i:s', strtotime('+1 hour')));
             $form->number('total_hours')->default(1)->attribute('min', 0);
             $form->text('hourly_rate')->default(1500);
             $form->text('record_salary')->default(1500);
             $form->text('sale_price')->default(2000);
+            $form->switch('is_checkout', '結帳');
+
             $form->text('note');
         
             $form->html('
@@ -234,12 +254,12 @@ class MemberWorkController extends AdminController
                         $("input[name=\'record_salary\']").val(total_hours * hourly_rate);
                     }
 
-                    $("select[name=\'admin_user_name\']").change(function(){
-                        var username = $(this).val();
+                    $("select[name=\'admin_user_id\']").change(function(){
+                        var selectedUserId = $(this).val();
                         $.ajax({
                             url: "/admin/api/hourly_rate",
                             type: "GET",
-                            data: { username: username },
+                            data: { admin_user_id: selectedUserId  },
                             success: function(data){
                                 if(data.hourly_rate){
                                     $("input[name=\'hourly_rate\']").val(data.hourly_rate);
@@ -261,17 +281,17 @@ class MemberWorkController extends AdminController
                 </script>'
             );
 
-            $form->display('created_at');
-            $form->display('updated_at');
+            // $form->display('created_at');
+            // $form->display('updated_at');
         });
     }
 
     //取得選擇的會員時薪
     public function getHourlyRate(Request $request) 
     {
-        $username = $request->get('username');
+        $adminUserId = $request->get('admin_user_id');
 
-        $user = Administrator::where('username', $username)->first();
+        $user = Administrator::find($adminUserId);
 
         if ($user) {
             return response()->json([
@@ -296,7 +316,7 @@ class MemberWorkController extends AdminController
 
         admin_success(admin_trans_label('success_start_work'));
 
-        return back();
+        return redirect('/admin/member_work');
     }
 
     //下班打卡鈕 功能在App\Admin\Repositories\MemberWork
@@ -305,11 +325,34 @@ class MemberWorkController extends AdminController
         $memberWorkRepo = new MemberWork();
         
         // 更新最后一条工作记录的下班时间、总工时和工资
-        $memberWorkRepo->updateLastWorkRecord(Admin::user()->id, date('H:i:s'));
+        $memberWorkRepo->updateLastWorkRecord(Admin::user()->id, date('Y-m-d H:i:s'));
 
         admin_success(admin_trans_label('success_end_work'));
 
-        return back();
+        return redirect('/admin/member_work');
+    }
+
+    //結帳切換
+    public function checkout($id)
+    {
+        // 找到对应的 member_work
+        $memberWorkRepo = new MemberWork();
+        // 获取会员的最后一笔上班打卡记录
+        $member_work = $memberWorkRepo->model()::where('id', $id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        // 如果找不到，返回一个错误响应
+        if (!$member_work) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+
+        // 切换 is_checkout 的值
+        $member_work->is_checkout = !$member_work->is_checkout;
+        $member_work->save();
+
+        // 返回一个成功的响应
+        return response()->json(['message' => 'Success']);
     }
 
 }

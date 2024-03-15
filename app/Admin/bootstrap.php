@@ -65,7 +65,7 @@ Grid::resolving(function (Grid $grid) {
 });
 
 //自訂全域js套件
-Admin::js('/js/global.js');
+Admin::js('/js/global_v1.js');
 
 //自訂全域css套件
-Admin::css('/css/global.css');
+Admin::css('/css/global_v1.css');

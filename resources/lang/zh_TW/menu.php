@@ -13,5 +13,6 @@ return [
         'extensions'    => '擴展',
         'scaffold'      => '代碼生成器',
         'icons'         => '圖示',
+        'member_work'   => '會員工作紀錄',
     ],
 ];

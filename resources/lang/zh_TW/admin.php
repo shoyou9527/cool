@@ -112,6 +112,7 @@ return [
     'company'               => '公司管理',
     'agent'                 => '代理管理',
     'member'                => '會員管理',
+    'report'                => '報表',
     'roles'                 => '角色',
     'permissions'           => '權限',
     'slug'                  => '標誌',
